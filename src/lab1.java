@@ -1,7 +1,7 @@
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.file.Path;
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class lab1 {
 
@@ -20,10 +20,11 @@ public class lab1 {
         resetFiles();
         initializeIndexFile();
         addUser(1111L, "pedro");
-        addUser(1041631335L, "pepito");
+        addUser(1041L, "pepito");
         addUser(1121L, "pepita");
 
         searchWithoutIndex(1111L);
+        searchWithIndex(1111L);
 
     }
 
@@ -98,7 +99,7 @@ public class lab1 {
 
                 if(cc==ccToFind){
                     found = true;
-                    System.out.println("Encontrado");
+                    System.out.println("Encontrado usando indice");
                     System.out.println("CC: "+ cc);
                     System.out.println("Nombre: "+ name);
                     System.out.println("Comparaciones: "+ comparisons);
@@ -121,10 +122,75 @@ public class lab1 {
 
     }
 
+    private static void searchWithIndex(long ccToFind) throws IOException{
+
+        long startTime = System.nanoTime();
+        int comparisons = 0;
+
+        int bucket = hash(ccToFind);
+        
+        try (RandomAccessFile index = new RandomAccessFile (INDEX_FILE,"rw");
+        RandomAccessFile users = new RandomAccessFile (USER_FILE,"rw")) {
+
+                long bucketPos = (long) bucket * 8;
+                index.seek(bucketPos);
+
+                long currentNodeOffset = index.readLong();
+
+                while (currentNodeOffset != NULL_PTR){
+                    index.seek(currentNodeOffset);
+
+                    long cc = index.readLong();
+                    long recordOffset = index.readLong();
+                    long nextOffset = index.readLong();
+
+                    comparisons ++;
+                    
+                    if (ccToFind ==cc){
+                        users.seek(recordOffset);
+                        long foundCc = users.readLong();
+                        String foundName = users.readUTF();
+
+                        System.out.println("Encontrado usando hash");
+                        System.out.println("CC: "+ foundCc);
+                        System.out.println("Nombre: "+ foundName);
+                        System.out.println("Comparaciones: "+ comparisons);
+                        long end = System.nanoTime();
+                        printTime(startTime, end);
+                        return;
+
+                    }
+
+                    currentNodeOffset = nextOffset;
+
+                }
+
+                System.out.printf("No encontrado");
+                System.out.printf("Comparaciones: "+ comparisons);
+                long end = System.nanoTime();
+                printTime(startTime, end);
+
+            
+
+            }
+
+    }
+
     private static void printTime(long start, long end){
         long nanos = end - start;
         long millis = nanos / 1_000_000;
         System.out.println("Tiempo" + nanos + "ns");
         System.out.println("Tiempo" + millis + "ms");
+    }
+
+
+    private static void printBucketUsed ()throws IOException{
+        //TODO: IMPLEMENTAR
+
+    }
+
+    private static void printIndexNodes() throws IOException{
+        //TODO: IMPLEMENTAR
+
     }
 }
